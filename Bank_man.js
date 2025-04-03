@@ -33,25 +33,15 @@ async function connectToDatabase() {
 
 app.post('/account-manager/login', async (req, res) => {
   const { name, password } = req.body;
-
-  try {
-    const connection = await connectToDatabase();
-    const [rows] = await connection.query('SELECT password FROM account_manager WHERE name = ?', [name]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Manager not found' });
-    }
-
-    const storedPassword = rows[0].password;
-
-    if (password === storedPassword) {
-      res.json({ success: true, message: 'Login successful' });
-    } else {
-      res.status(401).json({ success: false, message: 'Incorrect password' });
-    }
-  } catch (error) {
-    console.error('Error during login:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+  
+  const connection = await connectToDatabase();
+  const sql = `SELECT * FROM account_manager WHERE name = '${name}' AND password = '${password}'`;
+  const [rows] = await connection.query(sql); // ❌ Directly injecting user input into query
+  
+  if (rows.length > 0) {
+    res.json({ success: true, message: 'Login successful' });
+  } else {
+    res.status(401).json({ success: false, message: 'Incorrect credentials' });
   }
 });
 

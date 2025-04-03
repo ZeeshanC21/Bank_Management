@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bank Management System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      max-width: 800px;
+      padding: 40px;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    p {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      margin-top: 20px;
+      box-sizing: border-box;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .section {
+      display: none;
+    }
+
+    #output {
+      margin-top: 30px;
+      padding: 20px;
+      background-color: #f0f0f0;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>Welcome to Bank Management System</h2>
+  <p>Please select your role:</p>
+  <div id="menu">
+    <button onclick="showCustomerSection()">Customer</button>
+    <button onclick="showAccountManagerSection()">Account Manager</button>
+  </div>
+  <div id="customerSection" class="section">
+    <h3>Customer Menu</h3>
+    <button onclick="fetchAndDisplayAccounts()">View Accounts</button>
+    <button onclick="deposit()">Deposit</button>
+    <button onclick="withdraw()">Withdraw</button>
+    <button onclick="backToMenu()">Back to Menu</button>
+  </div>
+  <div id="accountManagerSection" class="section">
+    <h3>Account Manager Menu</h3>
+    <button onclick="addAccount()">Add Account</button>
+    <button onclick="fetchAndDisplayAccounts()">Display Accounts</button>
+    <button onclick="searchAccount()">Search Account</button>
+    <button onclick="deleteAccount()">Delete Account</button>
+    <button onclick="update()">Update Account</button>
+    <button onclick="backToMenu()">Back to Menu</button>
+  </div>
+  <div id="output"></div>
+</div>
+
+<script src="Bank_man.js"></script>
+<script>
+  // Frontend logic
+  const accounts = [];
+
+  function showCustomerSection() {
+    hideAllSections();
+    document.getElementById('customerSection').style.display = 'block';
+  }
+
+  function showAccountManagerSection() {
+    const password = prompt("Enter password:");
+    if (password === "password") {
+        hideAllSections();
+        document.getElementById('accountManagerSection').style.display = 'block';
+    } else {
+        alert("Incorrect password. Please try again.");
+    }
+}
+
+  function hideAllSections() {
+    const sections = document.querySelectorAll('.section');
+    sections.forEach(section => {
+      section.style.display = 'none';
+    });
+  }
+
+  function displayOutput(message) {
+    document.getElementById('output').innerHTML = message;
+  }
+
+  function redirectToCustomerPage() {
+    window.location.href = "customer.html"; // Redirect to the customer page
+  }
+
+  function promptPassword() {
+    const password = prompt("Enter password:");
+    if (password === "your_password_here") {
+      showAccountManagerSection(); // Call the function to show account manager section
+    } else {
+      alert("Incorrect password. Please try again.");
+    }
+  }
+
+  function addAccount() {
+    const Acc_no = parseInt(prompt("Enter account number (positive integer):"));
+    const Name_emp = prompt("Enter account holder's name:");
+    const balance = parseFloat(prompt("Enter account balance (positive number):"));
+
+    if (isNaN(Acc_no) || Acc_no <= 0 || !Name_emp || isNaN(balance) || balance <= 0) {
+      displayOutput("Invalid account details.");
+    } else {
+      fetch('http://localhost:3001/accounts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          Acc_no,
+          Name_emp,
+          balance
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.text();
+      })
+      .then(data => {
+        displayOutput(data);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        displayOutput('Error adding account.');
+      });
+    }
+  }
+
+  function fetchAndDisplayAccounts() {
+    fetch('http://localhost:3001/accounts')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.length === 0) {
+        displayOutput("No accounts available.");
+      } else {
+        let output = "<h4>Accounts:</h4><ul>";
+        data.forEach(account => {
+          output += `<li>Name: ${account.Name_emp}, Account no.: ${account.Acc_no}, Balance: ${account.balance}</li>`;
+        });
+        output += "</ul>";
+        displayOutput(output);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      displayOutput('Error fetching accounts.');
+    });
+  }
+
+  async function searchAccount() {
+    const searchTerm = prompt("Enter account number to search:");
+    if (searchTerm) {
+      try {
+        const response = await fetch(`http://localhost:3001/accounts?searchTerm=${searchTerm}`);
+        const data = await response.json();
+        if (data.length > 0) {
+          let output = "<h4>Search Results:</h4><ul>";
+          data.forEach(account => {
+            if (account.Acc_no === parseInt(searchTerm)) {
+              output += `<li>Name: ${account.Name_emp},Account no.:${account.Acc_no}, Balance: ${account.balance}</li>`;
+            }
+          });
+          if (output === "<h4>Search Results:</h4><ul>") {
+            output += "<li>No account found with the provided account number.</li></ul>";
+          }
+          displayOutput(output);
+        } else {
+          displayOutput("No accounts found matching the search term.");
+        }
+      } catch (error) {
+        console.error('Error searching accounts:', error);
+        displayOutput('Error searching accounts. Please try again later.');
+      }
+    } else {
+      displayOutput("Please enter a search term.");
+    }
+  }
+
+  async function deleteAccount() {
+    const accNoInput = prompt("Enter account number to delete:");
+    const accNo = parseInt(accNoInput);
+
+    if (!isNaN(accNo) && accNoInput.trim() !== "") {
+      if (confirm(`Are you sure you want to delete account number ${accNo}?`)) {
+        try {
+          const response = await fetch(`http://localhost:3001/accounts/${accNo}`, {
+            method: "DELETE"
+          });
+
+          if (response.ok) {
+            const data = await response.json(); // Parse response as JSON
+
+            if (data.success) {
+              console.log(data); // Log the response data for debugging
+              displayOutput("Account deleted successfully.");
+              fetchAndDisplayAccounts(); // Refresh the displayed accounts list
+            } else {
+              displayOutput(data.message || "Error deleting account."); // Use message property from response or fallback
+            }
+          } else {
+            throw new Error('Network response was not ok');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          displayOutput('Error deleting account.');
+        }
+      } else {
+        displayOutput("Account deletion cancelled.");
+      }
+    } else {
+      displayOutput("Invalid account number.");
+    }
+  }
+
+  async function update() {
+  const accNo = prompt("Enter account number to update:");
+  const newName = prompt("Enter updated account holder name:");
+
+  if (accNo && newName) {
+    try {
+      const response = await fetch(`http://localhost:3001/accounts/${accNo}`, {
+        method: "PUT", // Use PUT method for update
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ newName }) // Send newName in request body
+      });
+
+      if (response.ok) {
+        alert("Account updated successfully.");
+        fetchAndDisplayAccounts();
+      } else {
+        alert("Error updating account.");
+      }
+    } catch (error) {
+      console.error('Error updating account:', error);
+      alert("Error updating account. Please try again later.");
+    }
+  } else {
+    alert("Please enter both account number and updated account holder name.");
+  }
+}
+
+async function deposit() {
+  const accNo = prompt("Enter account number for deposit:");
+  const amount = parseFloat(prompt("Enter deposit amount (positive number):"));
+
+  if (!isNaN(accNo) && accNo > 0 && !isNaN(amount) && amount > 0) {
+    try {
+      const response = await fetch(`http://localhost:3001/accounts/${accNo}/deposit`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ amount })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(data.message || "Deposit successful.");
+        fetchAndDisplayAccounts();
+      } else {
+        alert("Error depositing funds.");
+      }
+    } catch (error) {
+      console.error('Error depositing funds:', error);
+      alert("Error depositing funds. Please try again later.");
+    }
+  } else {
+    alert("Invalid account number or amount.");
+  }
+}
+
+async function withdraw() {
+  const accNo = prompt("Enter account number for withdrawal:");
+  const amount = parseFloat(prompt("Enter withdrawal amount (positive number):"));
+
+  if (!isNaN(accNo) && accNo > 0 && !isNaN(amount) && amount > 0) {
+    try {
+      const response = await fetch(`http://localhost:3001/accounts/${accNo}/withdraw`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ amount })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(data.message || "Withdrawal successful.");
+        fetchAndDisplayAccounts();
+      } else {
+        alert("Error withdrawing funds.");
+      }
+    } catch (error) {
+      console.error('Error withdrawing funds:', error);
+      alert("Error withdrawing funds. Please try again later.");
+    }
+  } else {
+    alert("Invalid account number or amount.");
+  }
+}
+
+  function backToMenu() {
+    hideAllSections();
+    document.getElementById('menu').style.display = 'block';
+    displayOutput("");
+  }
+</script>
+</body>
+</html>

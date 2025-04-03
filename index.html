@@ -102,14 +102,35 @@
   }
 
   function showAccountManagerSection() {
+    const name = prompt("Enter manager name:");
     const password = prompt("Enter password:");
-    if (password === "password") {
-        hideAllSections();
-        document.getElementById('accountManagerSection').style.display = 'block';
-    } else {
-        alert("Incorrect password. Please try again.");
+
+    if (!name || !password) {
+        alert("Name and password are required.");
+        return;
     }
+
+    fetch('http://localhost:4000/account-manager/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, password })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            hideAllSections();
+            document.getElementById('accountManagerSection').style.display = 'block';
+        } else {
+            alert("Incorrect credentials. Please try again.");
+        }
+    })
+    .catch(error => {
+        console.error("Error logging in:", error);
+        alert("Server error. Please try again later.");
+    });
 }
+
+
 
   function hideAllSections() {
     const sections = document.querySelectorAll('.section');
@@ -143,7 +164,7 @@
     if (isNaN(Acc_no) || Acc_no <= 0 || !Name_emp || isNaN(balance) || balance <= 0) {
       displayOutput("Invalid account details.");
     } else {
-      fetch('http://localhost:3001/accounts', {
+      fetch('http://localhost:4000/accounts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -171,7 +192,7 @@
   }
 
   function fetchAndDisplayAccounts() {
-    fetch('http://localhost:3001/accounts')
+    fetch('http://localhost:4000/accounts')
     .then(response => {
       if (!response.ok) {
         throw new Error('Network response was not ok');
@@ -200,7 +221,7 @@
     const searchTerm = prompt("Enter account number to search:");
     if (searchTerm) {
       try {
-        const response = await fetch(`http://localhost:3001/accounts?searchTerm=${searchTerm}`);
+        const response = await fetch(`http://localhost:4000/accounts?searchTerm=${searchTerm}`);
         const data = await response.json();
         if (data.length > 0) {
           let output = "<h4>Search Results:</h4><ul>";
@@ -232,7 +253,7 @@
     if (!isNaN(accNo) && accNoInput.trim() !== "") {
       if (confirm(`Are you sure you want to delete account number ${accNo}?`)) {
         try {
-          const response = await fetch(`http://localhost:3001/accounts/${accNo}`, {
+          const response = await fetch(`http://localhost:4000/accounts/${accNo}`, {
             method: "DELETE"
           });
 
@@ -267,7 +288,7 @@
 
   if (accNo && newName) {
     try {
-      const response = await fetch(`http://localhost:3001/accounts/${accNo}`, {
+      const response = await fetch(`http://localhost:4000/accounts/${accNo}`, {
         method: "PUT", // Use PUT method for update
         headers: {
           "Content-Type": "application/json"
@@ -296,7 +317,7 @@ async function deposit() {
 
   if (!isNaN(accNo) && accNo > 0 && !isNaN(amount) && amount > 0) {
     try {
-      const response = await fetch(`http://localhost:3001/accounts/${accNo}/deposit`, {
+      const response = await fetch(`http://localhost:4000/accounts/${accNo}/deposit`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
@@ -326,7 +347,7 @@ async function withdraw() {
 
   if (!isNaN(accNo) && accNo > 0 && !isNaN(amount) && amount > 0) {
     try {
-      const response = await fetch(`http://localhost:3001/accounts/${accNo}/withdraw`, {
+      const response = await fetch(`http://localhost:4000/accounts/${accNo}/withdraw`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
